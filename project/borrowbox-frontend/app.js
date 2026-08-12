@@ -163,6 +163,17 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+let homeProductsCache = [];
+
+function normalizeText(value) {
+  return (value || "").toLowerCase().trim();
+}
+
+function getCustomerUser() {
+  const user = getStoredUser();
+  return user && user.role === "customer" ? user : null;
+}
+
 // ---------------------------------------------------------------
 // Product card builder (shared by index + products pages)
 // ---------------------------------------------------------------
@@ -220,6 +231,7 @@ async function initHomePage() {
 
   try {
     const { products } = await apiRequest("/api/products?limit=8");
+    homeProductsCache = products || [];
     if (featuredGrid) {
       featuredGrid.innerHTML = "";
       if (products.length === 0) {
@@ -227,9 +239,189 @@ async function initHomePage() {
       }
       products.forEach((p) => featuredGrid.appendChild(productCard(p)));
     }
+    initRentalAssistant();
   } catch (err) {
     if (featuredGrid) featuredGrid.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+    initRentalAssistant();
   }
+}
+
+function initRentalAssistant() {
+  const surveyForm = document.getElementById("ai-survey-form");
+  const loginMessage = document.getElementById("assistant-login-message");
+  const result = document.getElementById("assistant-result");
+  const categorySelect = document.getElementById("assistant-category");
+  const modal = document.getElementById("ai-assistant-modal");
+  const modalStartBtn = document.getElementById("assistant-modal-start");
+
+  if (modal) {
+    const MODAL_KEY = "borrowbox_ai_assistant_popup_seen";
+    const shouldShow = !localStorage.getItem(MODAL_KEY);
+
+    const closeModal = () => {
+      modal.classList.add("hidden");
+      localStorage.setItem(MODAL_KEY, "true");
+    };
+
+    if (shouldShow) {
+      modal.classList.remove("hidden");
+      document.body.classList.add("modal-open");
+    }
+
+    modal.addEventListener("click", (event) => {
+      if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
+        closeModal();
+        document.body.classList.remove("modal-open");
+      }
+    });
+
+    if (modalStartBtn) {
+      modalStartBtn.addEventListener("click", () => {
+        closeModal();
+        document.body.classList.remove("modal-open");
+        document.getElementById("assistant-need")?.focus();
+        document.getElementById("assistant-need")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }
+
+  if (!surveyForm || !loginMessage || !result) return;
+
+  const renderCategoryOptions = (categories = []) => {
+    if (!categorySelect) return;
+    const current = categorySelect.value;
+    categorySelect.innerHTML = '<option value="">Any category</option>';
+    categories.forEach((cat) => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = cat;
+      if (current === cat) opt.selected = true;
+      categorySelect.appendChild(opt);
+    });
+  };
+
+  const isLoggedInCustomer = !!getCustomerUser();
+  surveyForm.classList.toggle("hidden", !isLoggedInCustomer);
+  loginMessage.classList.toggle("hidden", isLoggedInCustomer);
+
+  if (!isLoggedInCustomer) {
+    result.innerHTML = `
+      <div class="assistant-empty">
+        Login as a customer to start the rental survey and get personalised recommendations.
+      </div>
+    `;
+    return;
+  }
+
+  apiRequest("/api/categories")
+    .then(({ categories }) => renderCategoryOptions(categories || []))
+    .catch(() => renderCategoryOptions([]));
+
+  const scoreProduct = (product, answers) => {
+    let score = 0;
+    const title = normalizeText(product.title);
+    const desc = normalizeText(product.description);
+    const category = normalizeText(product.category);
+    const location = normalizeText(product.location);
+    const needText = normalizeText(answers.need);
+
+    if (needText) {
+      const keywords = needText.split(/\s+/).filter(Boolean);
+      const words = keywords.filter((word) => word.length > 2);
+      const matches = words.filter((word) => title.includes(word) || desc.includes(word) || category.includes(word));
+      score += matches.length * 35;
+      if (title.includes(needText) || desc.includes(needText)) score += 25;
+    }
+
+    if (answers.category && category === normalizeText(answers.category)) score += 25;
+    if (answers.location && location.includes(normalizeText(answers.location))) score += 20;
+
+    const price = Number(product.rent_price || 0);
+    if (answers.budget !== "any") {
+      const budgetLimit = Number(answers.budget || 0);
+      if (price <= budgetLimit) score += 25;
+      else score -= Math.max(0, (price - budgetLimit) / 200);
+    }
+
+    if (answers.duration !== "any") {
+      const durationMatch = product.rent_period === answers.duration || product.rent_period === "month" || answers.duration === "any";
+      if (durationMatch) score += 15;
+    }
+
+    return score;
+  };
+
+  const renderResults = (surveyData) => {
+    const data = surveyData || {
+      need: document.getElementById("assistant-need").value.trim(),
+      budget: document.getElementById("assistant-budget").value,
+      category: document.getElementById("assistant-category").value,
+      location: document.getElementById("assistant-location").value.trim(),
+      duration: document.getElementById("assistant-duration").value,
+    };
+
+    if (!homeProductsCache.length) {
+      result.innerHTML = `<div class="assistant-empty">Loading products...</div>`;
+      return;
+    }
+
+    const rentalItems = homeProductsCache.filter((product) => product.available_for_rent);
+    const scored = rentalItems.map((product) => ({ product, score: scoreProduct(product, data) }));
+    const matches = scored
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ product }) => product);
+
+    if (!matches.length) {
+      result.innerHTML = `
+        <div class="assistant-empty">
+          No perfect match found yet. Try a broader product need, a higher budget, or a different area.
+        </div>
+      `;
+      return;
+    }
+
+    result.innerHTML = `
+      <div class="assistant-summary">
+        Based on your survey, these are the best rental options for <strong>${escapeHtml(data.need || "your needs")}</strong>.
+      </div>
+      <div class="assistant-list">
+        ${matches.map((product) => `
+          <a class="assistant-item" href="product.html?id=${product.id}">
+            <div class="assistant-item-thumb">
+              <img src="${firstImage(product)}" alt="${escapeHtml(product.title)}" onerror="this.src='https://placehold.co/180x120?text=No+Image'">
+            </div>
+            <div class="assistant-item-body">
+              <strong>${escapeHtml(product.title)}</strong>
+              <span>${escapeHtml(product.category)} · ${escapeHtml(product.location)}</span>
+              <em>${formatPrice(product.rent_price)} / ${escapeHtml(product.rent_period || "month")}</em>
+            </div>
+          </a>
+        `).join("")}
+      </div>
+    `;
+  };
+
+  surveyForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const need = document.getElementById("assistant-need").value.trim();
+    if (!need) {
+      result.innerHTML = `<div class="assistant-empty">Tell the assistant what item you need before searching.</div>`;
+      return;
+    }
+    renderResults();
+  });
+
+  const defaultNeed = "Laptop for study";
+  document.getElementById("assistant-need").value = defaultNeed;
+  renderResults({
+    need: defaultNeed,
+    budget: document.getElementById("assistant-budget").value,
+    category: document.getElementById("assistant-category").value,
+    location: document.getElementById("assistant-location").value.trim(),
+    duration: document.getElementById("assistant-duration").value,
+  });
 }
 
 // ---------------------------------------------------------------
