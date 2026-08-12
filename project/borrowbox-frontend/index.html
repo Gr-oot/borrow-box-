@@ -31,6 +31,87 @@
       </div>
     </section>
 
+    <div id="ai-assistant-modal" class="assistant-modal hidden" aria-modal="true" role="dialog" aria-labelledby="ai-modal-title">
+      <div class="assistant-modal-backdrop" data-close-modal="true"></div>
+      <div class="assistant-modal-card">
+        <button type="button" class="assistant-modal-close" aria-label="Close popup" data-close-modal="true">×</button>
+        <div class="assistant-modal-icon">✨</div>
+        <h3 id="ai-modal-title">AI Rental Assistant</h3>
+        <p>Tell us what you need, your budget, and your rental period. We’ll suggest the perfect rental match for you.</p>
+        <div class="assistant-modal-actions">
+          <button type="button" class="btn btn-outline" data-close-modal="true">Maybe later</button>
+          <button type="button" class="btn btn-primary" id="assistant-modal-start">Start survey</button>
+        </div>
+      </div>
+    </div>
+
+    <section aria-label="AI rental assistant">
+      <div class="assistant-header">
+        <div>
+          <h2 class="section-title">AI Rental Assistant</h2>
+          <p class="assistant-subtitle">Answer a few quick questions and we’ll match the perfect rental for you.</p>
+        </div>
+        <span class="assistant-badge">✨ Smart match</span>
+      </div>
+
+      <div class="assistant-card">
+        <div id="assistant-login-message" class="assistant-login-message hidden">
+          Log in as a customer to unlock the rental survey and get personal suggestions.
+        </div>
+
+        <form id="ai-survey-form" class="assistant-survey hidden">
+          <div class="assistant-survey-grid">
+            <label class="survey-field">
+              <span>1. What do you need?</span>
+              <input id="assistant-need" type="text" placeholder="Example: laptop for college or sofa for hostel" required>
+            </label>
+
+            <label class="survey-field">
+              <span>2. What is your monthly budget?</span>
+              <select id="assistant-budget">
+                <option value="500">Up to ₹500</option>
+                <option value="1000">Up to ₹1,000</option>
+                <option value="2000">Up to ₹2,000</option>
+                <option value="4000">Up to ₹4,000</option>
+                <option value="8000">Up to ₹8,000</option>
+                <option value="any">No strict limit</option>
+              </select>
+            </label>
+
+            <label class="survey-field">
+              <span>3. Preferred category</span>
+              <select id="assistant-category">
+                <option value="">Any category</option>
+              </select>
+            </label>
+
+            <label class="survey-field">
+              <span>4. Preferred location</span>
+              <input id="assistant-location" type="text" placeholder="City or area name">
+            </label>
+
+            <label class="survey-field">
+              <span>5. Rental duration</span>
+              <select id="assistant-duration">
+                <option value="month">Monthly</option>
+                <option value="week">Weekly</option>
+                <option value="day">Short term</option>
+                <option value="any">Flexible</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="assistant-actions">
+            <button type="submit" class="btn btn-primary" id="assistant-run">Get my perfect match</button>
+          </div>
+        </form>
+
+        <div id="assistant-result" class="assistant-result">
+          <div class="assistant-empty">The rental survey will show here after you answer the questions.</div>
+        </div>
+      </div>
+    </section>
+
     <section>
       <h2 class="section-title">Featured Listings</h2>
       <div class="product-grid" id="featured-grid">
