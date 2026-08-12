@@ -1,15 +1,23 @@
 :root {
   --primary: #2b6b4f;
   --primary-dark: #1f5039;
+  --primary-light: #eaf3ee;
+
   --accent: #e8a33d;
+  --accent-dark: #c98520;
+
   --bg: #f7f6f2;
   --card-bg: #ffffff;
+
   --text: #1f2421;
   --text-muted: #6b7268;
+
   --border: #e3e1da;
   --danger: #c14848;
+
   --radius: 10px;
   --shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -49,20 +57,84 @@ img { max-width: 100%; display: block; }
   height: 64px;
 }
 
+/* ---------- BorrowBox Logo ---------- */
+
 .logo {
-  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 23px;
   font-weight: 800;
   color: var(--primary-dark);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
 }
 
-.logo span { color: var(--accent); }
+/* Logo icon */
+.logo::before {
+  content: "B";
+  width: 36px;
+  height: 36px;
 
-.nav-links {
   display: flex;
   align-items: center;
-  gap: 22px;
-  font-weight: 500;
+  justify-content: center;
+
+  background: var(--primary);
+  color: #ffffff;
+
+  border-radius: 9px;
+
+  font-size: 19px;
+  font-weight: 800;
+
+  box-shadow: 0 3px 8px rgba(43, 107, 79, 0.20);
+
+  position: relative;
+}
+
+/* Golden accent */
+.logo span {
+  color: var(--accent);
+}/* ---------- BorrowBox Logo ---------- */
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 23px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+}
+
+/* Logo icon */
+.logo::before {
+  content: "B";
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--primary);
+  color: #ffffff;
+
+  border-radius: 9px;
+
+  font-size: 19px;
+  font-weight: 800;
+
+  box-shadow: 0 3px 8px rgba(43, 107, 79, 0.20);
+
+  position: relative;
+}
+
+/* Golden accent */
+.logo span {
+  color: var(--accent);
 }
 
 .nav-links a {
@@ -457,8 +529,34 @@ footer {
 .mt-16 { margin-top: 16px; }
 .mb-16 { margin-bottom: 16px; }
 
-@media (max-width: 720px) {
-  .product-detail { grid-template-columns: 1fr; }
-  .nav-links { gap: 12px; }
-  .hero h1 { font-size: 30px; }
+@media (max-width: 400px) {
+
+  .hero h1 {
+    font-size: 26px;
+  }
+
+  .category-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .product-card .thumb {
+    height: 160px;
+  }
+
+  .form-card {
+    padding: 18px 13px;
+  }
+
+  .logo {
+    font-size: 18px;
+    gap: 6px;
+  }
+
+  .logo::before {
+    width: 29px;
+    height: 29px;
+    font-size: 15px;
+    border-radius: 7px;
+  }
 }
